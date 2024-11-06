@@ -3,23 +3,18 @@ const {connectDB}= require('./config/database');
 const app = express();
 const User = require('./models/user');
 
+//middleware to convert json vaues readable
+app.use(express.json());
 app.post('/signup', async (req, res)=>{
-    
-    const user= new User({
-        firstName:"yogesh",
-        lastName:"rana",
-        email:"y.rana@gmail.com",
-        age: 21,
-        password:"yogesh1234"
-    });
+    //creating instance of user model
+    const user= new User(req.body);
 
     try{
        await user.save();
        res.send('User registered successfully');  
     }
     catch(err){
-        res.status(400).send(err+' Invalid data');
-        
+        res.status(400).send(err+' Invalid data');        
     }
 })
 
