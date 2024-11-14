@@ -56,6 +56,29 @@ catch(err){
     res.status(400).send('Something went wrong');
 }})
 
+app.delete('/user', async (req, res) => {   
+    try{
+        await User.findByIdAndDelete(req.body.id);
+        res.send('User deleted successfully');
+    }
+    catch(err){
+        res.status(400).send('Something went wrong');
+    }
+})
+
+app.put('/user', async (req, res) => {
+    try{
+        const user= await User.findByIdAndUpdate(req.body.id,req.body,{returnDocument:"after"});
+        if(!user){
+            return res.status(404).send('User not found');
+        } else{
+            res.send(user);
+        }}
+    catch(err){
+        res.status(400).send('Something went wrong');
+    }
+})
+
 
 connectDB()
 .then(()=>{
