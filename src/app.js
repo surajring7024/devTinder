@@ -56,6 +56,7 @@ app.get("/feed", async (req, res) => {
   }
 });
 
+//;
 app.delete("/user", async (req, res) => {
   try {
     await User.findByIdAndDelete(req.body.id);
@@ -65,11 +66,13 @@ app.delete("/user", async (req, res) => {
   }
 });
 
+//update user info  
 app.put("/user/:id", async (req, res) => {
   try {
     const userId=req.params?.id;
     const data= req.body;   
 
+    //api level validation
     const ALLOWED_UPDATES =["photourl","skills","about","mobileNo","primaryAddress","permanentAddress"]
     
     const isallowed= Object.keys(data).every((k)=>ALLOWED_UPDATES.includes(k));
@@ -78,14 +81,18 @@ app.put("/user/:id", async (req, res) => {
         throw new Error("Update not allowed");
     }
 
-    if(data?.skills.length>20){ 
-        throw new Error("Cannot add more than 20 skills"); 
+    if(data.skills!=undefined){ 
+      if(data?.skills.length>20)
+        throw new Error("Cannot add more than 20 skills");
+      else
+      data.skills = [...new Set(data?.skills)];
     }
 
     const user = await User.findByIdAndUpdate({_id:userId},data, {
       returnDocument: "after",
       runValidators: true
     });
+
     if (!user) {
       return res.status(404).send("User not found");
     } else {

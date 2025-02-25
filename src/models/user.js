@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
 
 const addressSchema = new mongoose.Schema({
   address: { type: String, maxLength: 30, trim: true },
@@ -37,14 +38,31 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      match: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
       trim: true,
       lowercase: true,
+      validate(value){
+        if(!validator.isEmail(value)){
+          throw new Error("Invalid email "+value);
+        }
+      }
     },
+    passwords: {
+        type: String,
+        required: true,
+        validate(value){
+          if(!validator.isStrongPassword(value)){
+            throw new Error("Enter a strong password "+ value);
+          }
+        }
 
+    },
     age: {
         type: Number,
         min: 18,   
+    },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other","male","female","other"],
     },
     isActive: {
       type: Boolean,
@@ -68,7 +86,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default:
         "https://static.vecteezy.com/system/resources/previews/008/442/086/non_2x/illustration-of-human-icon-user-symbol-icon-modern-design-on-blank-background-free-vector.jpg",
-    },
+      validate(value){
+        if(!validator.isURL(value)){
+          throw new Error("Invalid photourl "+value);
+        }
+      }
+      },
     mobileNo: {
       type: String,
       maxLength: 10,
