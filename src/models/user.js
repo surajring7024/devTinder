@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema(
         }
       }
     },
-    passwords: {
+    password: {
         type: String,
         required: true,
         validate(value){
@@ -67,12 +67,12 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
-      required: true,
+
     },
     isDisabled: {
       type: Boolean,
       default: false,
-      required: true,
+      
     },
     skills: {
       type: [String],
@@ -96,9 +96,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxLength: 10,
       minLength: 8,
-      match: /^[0-9]$/,
-      unique: true,
-    },
+      match: /^[0-9]$/,      
+    },  
     primaryAddress: {
       type: addressSchema,
     },
