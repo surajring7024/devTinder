@@ -2,11 +2,15 @@ const express = require("express");
 const { connectDB } = require("./config/database");
 const app = express();
 const User = require("./models/user");
+const {userAuth}=require("./middleware/auth");
 const bcrypt = require("bcrypt");
 const {validateSignUpData} = require("./utils/API_Level_Validation");
+const cookieParser = require("cookie-parser");
+const jwt= require("jsonwebtoken");
 
 //middleware to convert json vaues readable
 app.use(express.json());
+app.use(cookieParser());
 app.post("/signup", async (req, res) => {
 
   try {
@@ -15,7 +19,6 @@ app.post("/signup", async (req, res) => {
 validateSignUpData(req);
 //password encryption using bcrypt
 const hashPassword = await bcrypt.hash(password, 10);
-console.log(hashPassword);
 
 //check if user already exists
     const existingUser = await User.findOne({ email });
@@ -49,11 +52,17 @@ app.post("/login",async(req, res)=>{
     }
 
     //bcrpt uses promise so always use await.
-    const isPasswordValid= await bcrypt.compare(password, user.password);
+    const isPasswordValid= await user.validatePassword(password);
 
     if(!isPasswordValid){
       throw new Error("Invalid password");
     }else{
+
+      //generate jwt token and pass to cookies
+      const jwtToken= await user.getJwtToken();
+
+      //create cookies
+      res.cookie("token",jwtToken, {expires: new Date(Date.now()+8*3000)});
       res.send("Login successful");
     }
     
@@ -62,6 +71,16 @@ app.post("/login",async(req, res)=>{
    res.status(400).send("Invalid credentials: "+ err.message );
   }
 })
+
+app.get('/profile',userAuth,async (req,res)=>{
+  try{
+   const user= req.user;
+    res.send(user);
+  }catch (err) {
+    res.status(400).send("ERROR:"+err.message);
+  }
+});
+
 app.get("/user", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -146,6 +165,19 @@ app.put("/user/:id", async (req, res) => {
   } catch (err) {
     res.status(400).send("Something went wrong: " + err.message);
   }
+});
+
+app.post('/sendConnectionRequest',userAuth, async (req, res) => {
+  try{
+    const user = req.user;
+
+    res.send(user.firstName+" "+user.lastName+" send the connection request.!!");
+  
+  }
+  catch(err){
+    res.status(400).send("Error: "+err.message);
+  }
+  
 });
 
 connectDB()
