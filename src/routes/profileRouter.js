@@ -2,16 +2,16 @@ const express = require("express");
 const profileRouter = express.Router();
 const { userAuth } = require("../middleware/auth");
 const bcrypt = require("bcrypt");
-const validator=require('validator');
+const validator = require("validator");
 const { validateProfileEditData } = require("../utils/API_Level_Validation");
-const User=require('../models/user');
+const User = require("../models/user");
 
 profileRouter.get("/profile/view", userAuth, async (req, res) => {
   try {
     const user = req.user;
-    res.send(user);
+    res.json({ ResponseData: user, ErrorMessage: null });
   } catch (err) {
-    res.status(400).send("ERROR:" + err.message);
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 profileRouter.put("/profile/edit", userAuth, async (req, res) => {
@@ -34,30 +34,32 @@ profileRouter.put("/profile/edit", userAuth, async (req, res) => {
 
     res.json({ ResponseData: user, ErrorMessage: null });
   } catch (err) {
-    res.status(400).send("ERROR:" + err.message);
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 profileRouter.put("/profile/changePassword", userAuth, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    const user=req.user;
+    const user = req.user;
     const isPasswordMatch = await user.validatePassword(oldPassword);
 
     if (!isPasswordMatch) {
       throw new Error("Incorrect password");
     }
-   
-    if( !validator.isStrongPassword(newPassword)){
+
+    if (!validator.isStrongPassword(newPassword)) {
       throw new Error("Enter a strong Password");
     }
     const hashPassword = await bcrypt.hash(newPassword, 10);
-    user.password=hashPassword;
+    user.password = hashPassword;
     await user.save();
 
-    res.send("Password updated Successfully!!");
-
+    res.json({
+      ResponseData: "Password updated Successfully!!",
+      ErrorMessage: null,
+    });
   } catch (err) {
-    res.status(400).send("ERROR:" + err.message);
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 module.exports = profileRouter;

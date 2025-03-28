@@ -57,6 +57,12 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
+    securityQuestion: [
+      {
+        question: { type: String, required: true },
+        answer: { type: String, required: true },
+      },
+    ],
     age: {
       type: Number,
       min: 18,
@@ -106,6 +112,19 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+userSchema.index({ firstName: 1, lastName: 1 });
+
+userSchema.pre("save", function (next) {
+  const user = this;
+  const questionsSet = new Set(user.securityQuestions.map((q) => q.question));
+
+  if (questionsSet.size !== user.securityQuestions.length) {
+    throw new Error("Duplicate security questions are not allowed.");
+  }
+  next();
+});
 
 userSchema.methods.getJwtToken = async function () {
   const user = this;

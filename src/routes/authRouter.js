@@ -6,7 +6,7 @@ const User = require("../models/user");
 
 authRouter.post("/signup", async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, securityQuestion } = req.body;
     //validating data using API level validation
     validateSignUpData(req);
     //password encryption using bcrypt
@@ -23,13 +23,19 @@ authRouter.post("/signup", async (req, res) => {
       lastName,
       email,
       password: hashPassword,
+      securityQuestion,
     });
 
     //saving user to the database
     await user.save();
-    res.status(201).send("User registered successfully");
+    res
+      .status(201)
+      .json({
+        ResponseData: "User registered successfully",
+        ErrorMessage: null,
+      });
   } catch (err) {
-    res.status(400).send(err + " Invalid data");
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 
@@ -55,17 +61,78 @@ authRouter.post("/login", async (req, res) => {
       res.cookie("token", jwtToken, {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
-      res.send("Login successful");
+      res.json({ Responsedata: "Login successful", ErrorMessage: null });
     }
   } catch (err) {
-    res.status(400).send("Invalid credentials: " + err.message);
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 authRouter.post("/logout", async (req, res) => {
-      res.cookie("token", null, {
-        expires: new Date(Date.now()),
-      });
-      res.send("Logout successful");
-
+  res.cookie("token", null, {
+    expires: new Date(Date.now()),
+  });
+  res.send("Logout successful");
 });
+
+const getUserByEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      throw new Error("User is not present");
+    }
+    req = req.user;
+    next();
+  } catch (err) {
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
+  }
+};
+
+const validateSecurityQuestion = async (req, res, next) => {
+  try {
+    const { question, answer } = req.body.securityQuestion;
+    const user = req.user;
+
+    if (!user.securityQuestion || user.securityQuestion.question !== question) {
+      throw new Error("Incorrect security question");
+    }
+    if (user.securityQuestion.answer !== answer) {
+      throw new Error("Incorrect answer");
+    }
+    next();
+  } catch (err) {
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
+  }
+};
+
+authRouter.post(
+  "/forgetPassword",
+  getUserByEmail,
+  validateSecurityQuestion,
+  async (req, res) => {
+    try {
+      const { newPassword, verifyNewPassword } = req.body;
+      const user = req.user;
+
+      if (newPassword !== verifyNewPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedPassword;
+
+      await user.save();
+
+      res
+        .status(200)
+        .json({
+          ResponseData: "Password reset successfully",
+          ErrorMessage: null,
+        });
+    } catch (err) {
+      res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
+    }
+  }
+);
 module.exports = authRouter;

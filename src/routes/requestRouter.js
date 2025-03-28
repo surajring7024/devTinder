@@ -47,9 +47,9 @@ requestRouter.post(
 
       const data = await connectionRequest.save();
 
-      res.json({ ResponseData: data });
+      res.json({ ResponseData: data, ErrorMessage: null });
     } catch (err) {
-      res.status(400).send("Error: " + err.message);
+      res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
     }
   }
 );
@@ -58,35 +58,33 @@ requestRouter.post(
   "/request/review/:status/:requestId",
   userAuth,
   async (req, res) => {
-    try
-    { 
-      const loggedInUser= req.user;
-      const{ status, requestId}=req.params;
+    try {
+      const loggedInUser = req.user;
+      const { status, requestId } = req.params;
 
-      const ALLOWED_STATUS=["accepted", "rejected"];
+      const ALLOWED_STATUS = ["accepted", "rejected"];
 
-      if(!ALLOWED_STATUS.includes(status)){
+      if (!ALLOWED_STATUS.includes(status)) {
         throw new Error("Invalid status");
       }
 
-      const existingConnection= await ConnectionRequest.findOne({
-        _id:requestId,
-        toUserId:loggedInUser._id,
-        status:"intrested"
-      })
+      const existingConnection = await ConnectionRequest.findOne({
+        _id: requestId,
+        toUserId: loggedInUser._id,
+        status: "intrested",
+      });
 
-      if(!existingConnection){
+      if (!existingConnection) {
         throw new Error("Connection not Found");
       }
 
-      existingConnection.status=status;
+      existingConnection.status = status;
 
-      const data = await existingConnection.save()
+      const data = await existingConnection.save();
 
-      res.status(200).json({ResponseData:data});
-
+      res.status(200).json({ ResponseData: data, ErrorMessage: null });
     } catch (err) {
-      res.status(400).json({ ErrorMessage: err.message });
+      res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
     }
   }
 );
