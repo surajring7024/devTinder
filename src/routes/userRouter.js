@@ -4,16 +4,16 @@ const { userAuth } = require("../middleware/auth");
 const User = require("../models/user");
 const ConnectionRequest = require("../models/connectionRequest");
 
-const USER_SAFE_DATA=[
-    "firstName",
-    "lastName",
-    "age",
-    "gender",
-    "about",
-    "skills",
-    "photoUrl",
-    "primaryAddress",
-  ]
+const USER_SAFE_DATA = [
+  "firstName",
+  "lastName",
+  "age",
+  "gender",
+  "about",
+  "skills",
+  "photourl",
+  "primaryAddress",
+];
 
 userRouter.get("/user/requests/recieve", userAuth, async (req, res) => {
   try {
@@ -24,9 +24,9 @@ userRouter.get("/user/requests/recieve", userAuth, async (req, res) => {
       status: "intrested",
     }).populate("fromUserId", USER_SAFE_DATA);
 
-    res.status(200).json({ ResponseData: data , ErrorMessage:null});
+    res.status(200).json({ ResponseData: data, ErrorMessage: null });
   } catch (err) {
-    res.status(400).json({ ResponseData:null,ErrorMessage: err.message });
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 
@@ -47,7 +47,7 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
       ],
     })
       .populate("fromUserId", USER_SAFE_DATA)
-      .populate("toUserId",USER_SAFE_DATA);
+      .populate("toUserId", USER_SAFE_DATA);
 
     const data = connections.map((row) => {
       if (row.fromUserId._id.equals(loggedInUser._id)) {
@@ -55,20 +55,20 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
       } else return row.fromUserId;
     });
 
-    res.status(200).json({ ResponseData: data , ErrorMessage:null});
+    res.status(200).json({ ResponseData: data, ErrorMessage: null });
   } catch (err) {
-    res.status(400).json({ ResponseData:null,ErrorMessage: err.message });
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 
 userRouter.get("/feed", userAuth, async (req, res) => {
   try {
     const loggedInUser = req.user;
-    let  limit=parseInt(req.query.limit) || 10;
-    const page=parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
 
-    limit= limit >50 ? 50 : limit;
-    const skip= (page -1)* limit;
+    limit = limit > 50 ? 50 : limit;
+    const skip = (page - 1) * limit;
 
     const existingConnections = await ConnectionRequest.find({
       $or: [
@@ -92,17 +92,17 @@ userRouter.get("/feed", userAuth, async (req, res) => {
           _id: { $nin: Array.from(hideUsers) },
         },
         {
-          _id: {$ne:loggedInUser._id},
+          _id: { $ne: loggedInUser._id },
         },
       ],
-    }).select(USER_SAFE_DATA)
-    .skip(skip)
-    .limit(limit);
+    })
+      .select(USER_SAFE_DATA)
+      .skip(skip)
+      .limit(limit);
 
-    res.status(200).json({ Responsedata:users,ErrorMessage:null });
-
+    res.status(200).json({ ResponseData: users, ErrorMessage: null });
   } catch (err) {
-    res.status(400).json({ ResponseData:null,ErrorMessage: err.message });
+    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
 });
 module.exports = userRouter;

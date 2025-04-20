@@ -27,7 +27,6 @@ profileRouter.put("/profile/edit", userAuth, async (req, res) => {
         throw new Error("Cannot add more than 20 skills");
       else data.skills = [...new Set(data?.skills)];
     }
-
     Object.keys(data).forEach((key) => (user[key] = data[key]));
 
     await user.save();

@@ -1,41 +1,55 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
-const { validateSignUpData } = require("../utils/API_Level_Validation");
+const {
+  validateSignUpData,
+  validateSecurityQuestions,
+} = require("../utils/API_Level_Validation");
 const authRouter = express.Router();
 const User = require("../models/user");
 
 authRouter.post("/signup", async (req, res) => {
   try {
-    const { firstName, lastName, email, password, securityQuestion } = req.body;
-    //validating data using API level validation
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      age,
+      gender,
+      securityQuestion,
+    } = req.body;
+
     validateSignUpData(req);
-    //password encryption using bcrypt
+    validateSecurityQuestions(securityQuestion);
+
     const hashPassword = await bcrypt.hash(password, 10);
 
-    //check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new Error("Email already exists");
     }
-    //creating instance of user model
+
     const user = new User({
       firstName,
       lastName,
       email,
+      age,
+      gender,
       password: hashPassword,
       securityQuestion,
     });
 
-    //saving user to the database
     await user.save();
-    res
-      .status(201)
-      .json({
-        ResponseData: "User registered successfully",
-        ErrorMessage: null,
-      });
+
+    res.status(201).json({
+      ResponseData: "User registered successfully",
+      ErrorMessage: null,
+    });
   } catch (err) {
-    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
+    res.status(400).json({
+      ResponseData: null,
+      ErrorMessage: err.message,
+    });
   }
 });
 
@@ -61,7 +75,7 @@ authRouter.post("/login", async (req, res) => {
       res.cookie("token", jwtToken, {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
-      res.json({ Responsedata: "Login successful", ErrorMessage: null });
+      res.json({ ResponseData: user, ErrorMessage: null });
     }
   } catch (err) {
     res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
@@ -73,66 +87,52 @@ authRouter.post("/logout", async (req, res) => {
   });
   res.send("Logout successful");
 });
-
-const getUserByEmail = async (req, res, next) => {
+authRouter.post("/forgetPassword", async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, securityQuestion, newPassword, verifyNewPassword } =
+      req.body;
 
-    const user = await User.findOne({ email: email });
+    // Find the user by email
+    const user = await User.findOne({ email });
     if (!user) {
-      throw new Error("User is not present");
+      throw new Error("User not found");
     }
-    req = req.user;
-    next();
-  } catch (err) {
-    res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
-  }
-};
 
-const validateSecurityQuestion = async (req, res, next) => {
-  try {
-    const { question, answer } = req.body.securityQuestion;
-    const user = req.user;
+    // Verify security question
+    const { question, answer } = securityQuestion;
+    const userSecurityQuestion = user.securityQuestion[0]; // Assuming it's the first question
 
-    if (!user.securityQuestion || user.securityQuestion.question !== question) {
+    if (!userSecurityQuestion) {
+      throw new Error("Security question not found for user");
+    }
+
+    // Check if the provided question matches the user's question and if the answer is correct
+    if (userSecurityQuestion.question !== question) {
       throw new Error("Incorrect security question");
     }
-    if (user.securityQuestion.answer !== answer) {
+
+    if (userSecurityQuestion.answer !== answer) {
       throw new Error("Incorrect answer");
     }
-    next();
+
+    // Check if both passwords match
+    if (newPassword !== verifyNewPassword) {
+      throw new Error("Passwords do not match");
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    // Save the updated user
+    await user.save();
+
+    res.status(200).json({
+      ResponseData: "Password reset successfully",
+      ErrorMessage: null,
+    });
   } catch (err) {
     res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
   }
-};
-
-authRouter.post(
-  "/forgetPassword",
-  getUserByEmail,
-  validateSecurityQuestion,
-  async (req, res) => {
-    try {
-      const { newPassword, verifyNewPassword } = req.body;
-      const user = req.user;
-
-      if (newPassword !== verifyNewPassword) {
-        throw new Error("Passwords do not match");
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      user.password = hashedPassword;
-
-      await user.save();
-
-      res
-        .status(200)
-        .json({
-          ResponseData: "Password reset successfully",
-          ErrorMessage: null,
-        });
-    } catch (err) {
-      res.status(400).json({ ResponseData: null, ErrorMessage: err.message });
-    }
-  }
-);
+});
 module.exports = authRouter;
