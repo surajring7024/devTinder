@@ -3,25 +3,27 @@ const { connectDB } = require("./config/database");
 const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+
+require("dotenv").config();
 //middleware to convert json vaues readable
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-  origin: 'http://localhost:5173', 
-  credentials: true, 
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-const authRouter=require('./routes/authRouter');
-const profileRouter=require('./routes/profileRouter');
-const requestRouter=require('./routes/requestRouter');
-const userRouter=require('./routes/userRouter');
+const authRouter = require("./routes/authRouter");
+const profileRouter = require("./routes/profileRouter");
+const requestRouter = require("./routes/requestRouter");
+const userRouter = require("./routes/userRouter");
 
-
-app.use('/',authRouter);
-app.use('/',profileRouter);
-app.use('/',requestRouter);
-app.use('/',userRouter);
-
+app.use("/", authRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
+app.use("/", userRouter);
 
 // app.get("/user", async (req, res) => {
 //   try {
@@ -72,22 +74,22 @@ app.use('/',userRouter);
 //   }
 // });
 
-// //update user info  
+// //update user info
 // app.put("/user/:id", async (req, res) => {
 //   try {
 //     const userId=req.params?.id;
-//     const data= req.body;   
+//     const data= req.body;
 
 //     //api level validation
 //     const ALLOWED_UPDATES =["photourl","skills","about","mobileNo","primaryAddress","permanentAddress"]
-    
+
 //     const isallowed= Object.keys(data).every((k)=>ALLOWED_UPDATES.includes(k));
 
 //     if(!isallowed){
 //         throw new Error("Update not allowed");
 //     }
 
-//     if(data.skills!=undefined){ 
+//     if(data.skills!=undefined){
 //       if(data?.skills.length>20)
 //         throw new Error("Cannot add more than 20 skills");
 //       else
@@ -109,12 +111,11 @@ app.use('/',userRouter);
 //   }
 // });
 
-
 connectDB()
   .then(() => {
     console.log("Successfully connected to db");
-    app.listen(7777, () => {
-      console.log("Server is running on port 7777");
+    app.listen(process.env.PORT, () => {
+      console.log("Server is running on port " + process.env.PORT);
     });
   })
   .catch((err) => {
